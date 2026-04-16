@@ -1,118 +1,85 @@
 from validaciones import validar_menu, validar_texto, validar_entero
-import gestionar_json as gestor
+from gestionar_json import cargar, guardar, generar_id
 
-# Constantes
 NOMBRE_ARCHIVO = 'categorias.json'
 
-# --- Funciones de Utilidad (Privadas/Internas) ---
-
-def _obtener_datos():
-    """Centraliza la carga de datos."""
-    return gestor.cargar(NOMBRE_ARCHIVO)
-
-def _guardar_datos(registros):
-    """Centraliza el guardado de datos."""
-    gestor.guardar(NOMBRE_ARCHIVO, registros)
-
-def _buscar_por_id(registros, id_buscado):
-    """Busca un elemento en la lista por su ID. (Principio DRY)"""
-    for elemento in registros:
-        if elemento.get('id') == id_buscado:
-            return elemento
-    return None
-
-def _imprimir_formato(elemento):
-    """Estandariza la visualización de la categoría."""
+def _imprimir_item_categoria(elemento):
+    """Función privada para estandarizar la salida."""
     print(f'''
-            *********************************************************
-            id:             {elemento.get('id', 'N/A')}
-            categoria:      {elemento.get('nombre', 'Sin nombre')}
-            ''')
-
-# --- Funciones Principales ---
+    *********************************************************
+    ID:             {elemento.get("id", "N/A")}
+    Categoría:      {elemento.get("nombre", "Sin nombre")}
+    ''')
 
 def guardar_categoria():
-    registros = _obtener_datos()
-    nueva_categoria = {
-        'id': gestor.generar_id(registros),
-        'nombre': validar_texto('Ingrese la categoria de la herramienta: ', 1, 30)
+    registros = cargar(NOMBRE_ARCHIVO)
+    nueva_cat = {
+        "id": generar_id(registros),
+        "nombre": validar_texto('Ingrese la categoria de la herramienta: ', 1, 30)
     }
-    registros.append(nueva_categoria)
-    _guardar_datos(registros)
-    print('DATOS GUARDADOS CORRECTAMENTE!')
+    registros.append(nueva_cat)
+    guardar(NOMBRE_ARCHIVO, registros)
+    print('¡DATOS GUARDADOS CORRECTAMENTE!')
 
 def listar_categoria():
-    registros = _obtener_datos()
+    registros = cargar(NOMBRE_ARCHIVO)
     if not registros:
-        print("No hay registros para mostrar.")
-        return
+        return print("No hay categorías registradas.")
     for elemento in registros:
-        _imprimir_formato(elemento)
+        _imprimir_item_categoria(elemento)
 
 def buscar_categoria():
-    registros = _obtener_datos()
+    registros = cargar(NOMBRE_ARCHIVO)
     if not registros:
-        print('No se puede buscar porque no hay registros')
-        return
+        return print('No hay registros para buscar.')
+        
+    id_buscar = validar_entero("Ingrese el id a buscar: ")
+    for elemento in registros:
+        if elemento.get('id') == id_buscar:
+            return _imprimir_item_categoria(elemento)
+    print(f'NO SE ENCONTRÓ EL ID: {id_buscar}')
 
-    id_buscado = validar_entero("Ingrese el id a buscar: ")
-    elemento = _buscar_por_id(registros, id_buscado)
-    
-    if elemento:
-        _imprimir_formato(elemento)
-    else:
-        print(f'NO SE ENCONTRÓ EL ID: {id_buscado}')
-
-def validar_categoria(id_buscado):
-    """Retorna un diccionario compatible con la estructura original."""
-    registros = _obtener_datos()
-    elemento = _buscar_por_id(registros, id_buscado)
-    
-    if elemento:
-        return {
-            'id': elemento.get('id'),
-            'categoria': elemento.get('nombre')
-        }
+def validar_categoria(id_cat):
+    """Retorna el objeto categoría si existe, sino False."""
+    registros = cargar(NOMBRE_ARCHIVO)
+    for elemento in registros:
+        if elemento.get('id') == id_cat:
+            return {
+                'id': elemento.get('id'),
+                'categoria': elemento.get('nombre')
+            }
     return False
 
 def actualizar_categoria():
-    registros = _obtener_datos()
+    registros = cargar(NOMBRE_ARCHIVO)
     if not registros:
-        print('No se puede actualizar porque no hay registros')
-        return
-
+        return print('No hay registros para actualizar.')
+        
     listar_categoria()
-    id_buscado = validar_entero("Ingrese el id a actualizar: ")
-    elemento = _buscar_por_id(registros, id_buscado)
-
-    if not elemento:
-        print(f'NO SE ENCONTRÓ EL ID: {id_buscado}')
-        return
-
-    opcion = validar_menu('''
-                            1. Nombre Categoria.
-                            2. Cancelar 
-                            ''', 1, 2)
-    if opcion == 1:
-        elemento['nombre'] = validar_texto('Ingrese la nueva categoria: ', 1, 20)
-        _guardar_datos(registros)
-        print('DATO ACTUALIZADO!')
-    else:
-        print('Operación cancelada!')
+    id_act = validar_entero("Ingrese el id a actualizar: ")
+    for elemento in registros:
+        if elemento.get('id') == id_act:
+            op = validar_menu('\n1. Nombre Categoria\n2. Cancelar\n', 1, 2)
+            if op == 1:
+                elemento['nombre'] = validar_texto('Ingrese la categoria: ', 1, 20)
+                guardar(NOMBRE_ARCHIVO, registros)
+                print('¡DATO ACTUALIZADO!')
+            else:
+                print('Operación cancelada.')
+            return
+    print(f'NO SE ENCONTRÓ EL ID: {id_act}')
 
 def eliminar_categoria():
-    registros = _obtener_datos()
+    registros = cargar(NOMBRE_ARCHIVO)
     if not registros:
-        print('No se puede eliminar porque no hay registros')
-        return
-
+        return print('No hay registros para eliminar.')
+        
     listar_categoria()
-    id_buscado = validar_entero("Ingrese el id a eliminar: ")
-    elemento = _buscar_por_id(registros, id_buscado)
-
-    if elemento:
-        print(f"{elemento.get('nombre')} ya no está entre nosotros!")
-        registros.remove(elemento)
-        _guardar_datos(registros)
-    else:
-        print(f'NO SE ENCONTRÓ EL ID: {id_buscado}')
+    id_elim = validar_entero("Ingrese el id a eliminar: ")
+    for elemento in registros:
+        if elemento.get('id') == id_elim:
+            print(f"La categoría {elemento.get('nombre')} ha sido eliminada.")
+            registros.remove(elemento)
+            guardar(NOMBRE_ARCHIVO, registros)
+            return
+    print(f'NO SE ENCONTRÓ EL ID: {id_elim}')

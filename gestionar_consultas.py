@@ -1,41 +1,82 @@
-import gestionar_json as gestor
+from gestionar_json import cargar
 from validaciones import validar_menu, validar_entero
 
+def _imprimir_item_herramienta(h):
+    cat = h.get('categoria', {})
+    print(f'''
+    ************************************************************
+    ID:             {h.get("id", "N/A")}
+    Nombre:         {h.get("nombre", "N/A")}
+    Categoría:      {cat.get("categoria", "N/A")} (ID: {cat.get("id", "N/A")})
+    Cantidad:       {h.get("cantidad", "0")}
+    Estado:         {h.get("estado", "N/A")}
+    Precio:         {h.get("precio", "0")}
+    ''')
+
 def stock_minimo():
-    registros = gestor.cargar('herramientas.json')
-    if not registros: return print('No hay registros')
+    registros = cargar('herramientas.json')
+    if not registros:
+        return print('No hay herramientas registradas.')
+        
+    minimo = validar_entero("Ingrese el stock máximo para filtrar: ")
+    encontrado = False
+    for h in registros:
+        if h.get('cantidad', 0) <= minimo:
+            _imprimir_item_herramienta(h)
+            encontrado = True
     
-    limite = validar_entero("Ingrese el stock mínimo: ")
-    encontrados = [h for h in registros if h.get('cantidad', 0) <= limite]
-    
-    if encontrados:
-        for h in encontrados: _imprimir_herramienta(h)
-    else:
-        print(f'No se encontraron herramientas con stock <= {limite}')
+    if not encontrado:
+        print(f'No hay herramientas con stock menor o igual a {minimo}')
 
 def activos_completados():
-    registros = gestor.cargar('prestamos.json')
-    if not registros: return print('No hay registros')
+    registros = cargar('prestamos.json')
+    if not registros:
+        return print('No hay préstamos para filtrar.')
+        
+    op = validar_menu('\n1. En proceso\n2. Finalizados (Aceptada/Rechazada)\n', 1, 2)
+    estados_objetivo = ['En proceso'] if op == 1 else ['Aceptada', 'Rechazada']
     
-    op = validar_menu('1. En proceso\n2. Completados', 1, 2)
-    filtro = ['En proceso'] if op == 1 else ['Aceptada', 'Rechazada']
-    
-    encontrados = [p for p in registros if p.get('estado') in filtro]
-    for p in encontrados: _imprimir_prestamo(p)
-    if not encontrados: print("No se encontraron registros en ese estado.")
-
-# Optimización de Reportes (De O(N^2) a O(N))
-def _obtener_top_uso(clave_entidad):
-    prestamos = gestor.cargar('prestamos.json')
-    conteo = {}
-    for p in prestamos:
-        eid = p.get(clave_entidad, {}).get('id')
-        if eid: conteo[eid] = conteo.get(eid, 0) + 1
-    return conteo
+    encontrado = False
+    for p in registros:
+        if p.get('estado') in estados_objetivo:
+            # Aquí podrías llamar a la función de impresión de préstamos si la importas
+            print(f"ID: {p.get('id')} - Usuario: {p.get('usuario', {}).get('nombre')} - Estado: {p.get('estado')}")
+            encontrado = True
+            
+    if not encontrado:
+        print("No se encontraron registros con ese estado.")
 
 def herramienta_mas_usada():
-    frecuencias = _obtener_top_uso('herramienta')
-    herramientas = gestor.cargar('herramientas.json')
-    for h in herramientas:
-        if h['id'] in frecuencias:
-            print(f"{h['id']}, {h['nombre']} = {frecuencias[h['id']]}")
+    """Optimización O(n): Usa un contador de frecuencias."""
+    prestamos = cargar('prestamos.json')
+    if not prestamos:
+        return print('No hay registros de préstamos.')
+    
+    conteo = {}
+    for p in prestamos:
+        h_id = p.get('herramienta', {}).get('id')
+        h_nombre = p.get('herramienta', {}).get('nombre', 'Desconocida')
+        if h_id:
+            clave = f"ID: {h_id} | {h_nombre}"
+            conteo[clave] = conteo.get(clave, 0) + 1
+            
+    print("\n--- FRECUENCIA DE USO (HERRAMIENTAS) ---")
+    for tool, total in conteo.items():
+        print(f"{tool} = {total} veces")
+
+def usuario_mas_usado():
+    prestamos = cargar('prestamos.json')
+    if not prestamos:
+        return print('No hay registros de préstamos.')
+        
+    conteo = {}
+    for p in prestamos:
+        u_id = p.get('usuario', {}).get('id')
+        u_nombre = p.get('usuario', {}).get('nombre', 'Desconocido')
+        if u_id:
+            clave = f"ID: {u_id} | {u_nombre}"
+            conteo[clave] = conteo.get(clave, 0) + 1
+            
+    print("\n--- FRECUENCIA DE USO (USUARIOS) ---")
+    for user, total in conteo.items():
+        print(f"{user} = {total} veces")
