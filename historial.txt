@@ -1,0 +1,2 @@
+Se ha creado un nuevo usuario  en la fecha de 2026-04-15 08:37:30.491470
+Se intento realizar una solicitud de prestamo pero no se pudo porque no hay registros en usuarios y herramientas en la fecha de 2026-04-16 07:02:41.693620
